@@ -1,0 +1,116 @@
+[
+  {
+    "model": "Naive Baseline",
+    "accuracy": 0.5085344320188346,
+    "weighted_f1": 0.44260429805367896,
+    "report": {
+      "clean": {
+        "precision": 0.4599260172626387,
+        "recall": 0.9885159010600707,
+        "f1-score": 0.6277699859747545,
+        "support": 1132.0
+      },
+      "offensive": {
+        "precision": 0.6061381074168798,
+        "recall": 0.4183583406884378,
+        "f1-score": 0.4950391644908616,
+        "support": 1133.0
+      },
+      "hate_speech": {
+        "precision": 0.7377049180327869,
+        "recall": 0.11915269196822595,
+        "f1-score": 0.20516717325227962,
+        "support": 1133.0
+      },
+      "accuracy": 0.5085344320188346,
+      "macro avg": {
+        "precision": 0.6012563475707685,
+        "recall": 0.5086756445722448,
+        "f1-score": 0.44265877457263186,
+        "support": 3398.0
+      },
+      "weighted avg": {
+        "precision": 0.6012979397809828,
+        "recall": 0.5085344320188346,
+        "f1-score": 0.44260429805367896,
+        "support": 3398.0
+      }
+    }
+  },
+  {
+    "model": "Logistic Regression",
+    "accuracy": 0.7442613301942319,
+    "weighted_f1": 0.7401224306621749,
+    "report": {
+      "clean": {
+        "precision": 0.7761650114591291,
+        "recall": 0.8975265017667845,
+        "f1-score": 0.8324457189676362,
+        "support": 1132.0
+      },
+      "offensive": {
+        "precision": 0.7436440677966102,
+        "recall": 0.6195939982347749,
+        "f1-score": 0.6759749638902263,
+        "support": 1133.0
+      },
+      "hate_speech": {
+        "precision": 0.7082969432314411,
+        "recall": 0.7157987643424537,
+        "f1-score": 0.7120280948200176,
+        "support": 1133.0
+      },
+      "accuracy": 0.7442613301942319,
+      "macro avg": {
+        "precision": 0.7427020074957268,
+        "recall": 0.7443064214480044,
+        "f1-score": 0.7401495925592934,
+        "support": 3398.0
+      },
+      "weighted avg": {
+        "precision": 0.7426921596428829,
+        "recall": 0.7442613301942319,
+        "f1-score": 0.7401224306621749,
+        "support": 3398.0
+      }
+    }
+  },
+  {
+    "model": "DistilBERT",
+    "accuracy": 0.7904649793996469,
+    "weighted_f1": 0.7898414107414707,
+    "report": {
+      "clean": {
+        "precision": 0.8944153577661431,
+        "recall": 0.9054770318021201,
+        "f1-score": 0.8999122036874452,
+        "support": 1132.0
+      },
+      "offensive": {
+        "precision": 0.7197802197802198,
+        "recall": 0.6937334510150044,
+        "f1-score": 0.7065168539325842,
+        "support": 1133.0
+      },
+      "hate_speech": {
+        "precision": 0.7543103448275862,
+        "recall": 0.7722859664607238,
+        "f1-score": 0.7631923244657653,
+        "support": 1133.0
+      },
+      "accuracy": 0.7904649793996469,
+      "macro avg": {
+        "precision": 0.7895019741246497,
+        "recall": 0.7904988164259494,
+        "f1-score": 0.7898737940285984,
+        "support": 3398.0
+      },
+      "weighted avg": {
+        "precision": 0.7894710990853202,
+        "recall": 0.7904649793996469,
+        "f1-score": 0.7898414107414707,
+        "support": 3398.0
+      }
+    }
+  }
+]
