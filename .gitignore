@@ -29,3 +29,4 @@ data/raw/
 
 # Jupyter
 .ipynb_checkpoints/
+frontend/node_modules/
