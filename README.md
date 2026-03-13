@@ -80,8 +80,12 @@ Three modeling approaches are implemented and evaluated, as required:
 - [Davidson et al. Hate Speech Dataset](https://github.com/t-davidson/hate-speech-and-offensive-language) — `labeled_data.csv` (24,783 tweets, 3 classes)
 - [Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge) — `train.csv.zip` (159,571 comments)
 - [Jigsaw Unintended Bias in Toxicity](https://www.kaggle.com/c/jigsaw-unintended-bias-in-toxicity-classification) — `train.csv` (sampled 100,000 comments)
+- [UC Berkeley D-Lab Measuring Hate Speech](https://huggingface.co/datasets/ucberkeley-dlab/measuring-hate-speech) — 39,565 comments with Rasch-scored hate speech measurements (auto-downloaded via HuggingFace)
+- [EDOS — Explainable Detection of Online Sexism](https://github.com/rewire-online/edos) — 20,000 posts from Gab & Reddit (SemEval 2023 Task 10, Kirk et al.)
+- [HateXplain](https://huggingface.co/datasets/Hate-speech-CNERG/hatexplain) — 20,148 posts with 3-class labels + rationale annotations (Mathew et al., AAAI 2021)
+- [ImplicitHate](https://huggingface.co/datasets/SALT-NLP/ImplicitHate) — 6,346 implicit hate tweets from US extremist groups (ElSherief et al., EMNLP 2021)
 
-Combined dataset: 284,021 samples → balanced to 16,986 (5,662 per class).
+Combined dataset: ~370k samples → balanced (equal per class).
 
 ## Experiments
 

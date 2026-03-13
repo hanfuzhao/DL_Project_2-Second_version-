@@ -97,7 +97,11 @@ def main():
         lambda x: lemmatize_text(x, lemmatizer, stop_words)
     )
 
-    label_map = {"clean": 0, "offensive": 1, "hate_speech": 2}
+    label_map = {
+        "clean": 0, "racism": 1, "sexism": 2, "profanity": 3,
+        "cyberbullying": 4, "toxicity": 5, "hate_speech": 6,
+        "implicit_hate": 7, "threat": 8, "sarcasm": 9,
+    }
     df["label_encoded"] = df["label"].map(label_map)
 
     print("Splitting data...")

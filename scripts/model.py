@@ -30,7 +30,10 @@ PROCESSED_DIR = Path("data/processed")
 MODELS_DIR = Path("models")
 OUTPUTS_DIR = Path("data/outputs")
 
-LABEL_NAMES = ["clean", "offensive", "hate_speech"]
+LABEL_NAMES = [
+    "clean", "racism", "sexism", "profanity", "cyberbullying",
+    "toxicity", "hate_speech", "implicit_hate", "threat", "sarcasm",
+]
 
 
 # ============================================================
@@ -40,19 +43,18 @@ LABEL_NAMES = ["clean", "offensive", "hate_speech"]
 class NaiveBaseline:
     """
     Naive baseline combining majority class prediction with keyword matching.
-    If the text contains known offensive keywords, predict offensive/hate;
-    otherwise predict the majority class.
+    Maps keywords to 10 content safety categories.
     """
 
-    HATE_KEYWORDS = {
-        "nigger", "nigga", "faggot", "fag", "kike", "spic", "chink",
-        "wetback", "gook", "coon", "tranny", "retard",
-    }
-    OFFENSIVE_KEYWORDS = {
-        "fuck", "shit", "damn", "ass", "bitch", "dick", "pussy",
-        "hell", "crap", "bastard", "slut", "whore", "hoe",
-        "stupid", "idiot", "dumb", "ugly", "fat", "kill",
-    }
+    KEYWORD_RULES = [
+        ({"nigger", "nigga", "kike", "spic", "chink", "wetback", "gook", "coon"}, 1),       # racism
+        ({"bitch", "slut", "whore", "hoe", "misogyn"}, 2),                                   # sexism
+        ({"kill", "die", "murder", "shoot", "bomb", "stab", "attack"}, 8),                    # threat
+        ({"fuck", "shit", "damn", "ass", "dick", "pussy", "crap", "bastard"}, 3),             # profanity
+        ({"stupid", "idiot", "dumb", "ugly", "fat", "loser", "moron"}, 4),                    # cyberbullying
+        ({"faggot", "fag", "tranny", "retard"}, 6),                                           # hate_speech
+    ]
+    NUM_CLASSES = len(LABEL_NAMES)
 
     def __init__(self):
         self.majority_class = None
@@ -61,41 +63,21 @@ class NaiveBaseline:
         self.majority_class = y.mode()[0]
         return self
 
+    def _classify(self, text: str) -> int:
+        words = set(str(text).lower().split())
+        for keywords, label_id in self.KEYWORD_RULES:
+            if words & keywords:
+                return label_id
+        return self.majority_class
+
     def predict(self, texts: pd.Series) -> np.ndarray:
-        predictions = []
-        for text in texts:
-            text_lower = str(text).lower()
-            words = set(text_lower.split())
-
-            if words & self.HATE_KEYWORDS:
-                predictions.append(2)  # hate_speech
-            elif words & self.OFFENSIVE_KEYWORDS:
-                predictions.append(1)  # offensive
-            else:
-                predictions.append(self.majority_class)
-
-        return np.array(predictions)
+        return np.array([self._classify(t) for t in texts])
 
     def predict_single(self, text: str) -> dict:
-        text_lower = text.lower()
-        words = set(text_lower.split())
-
-        if words & self.HATE_KEYWORDS:
-            label = 2
-            confidence = 0.8
-        elif words & self.OFFENSIVE_KEYWORDS:
-            label = 1
-            confidence = 0.6
-        else:
-            label = self.majority_class
-            confidence = 0.4
-
-        probs = [0.1, 0.1, 0.1]
+        label = self._classify(text)
+        confidence = 0.7 if label != self.majority_class else 0.4
+        probs = [(1.0 - confidence) / (self.NUM_CLASSES - 1)] * self.NUM_CLASSES
         probs[label] = confidence
-        remaining = 1.0 - confidence
-        for i in range(3):
-            if i != label:
-                probs[i] = remaining / 2
         return {"label": label, "probabilities": probs}
 
 
@@ -111,7 +93,7 @@ def train_classical_model(X_train, y_train):
         solver="lbfgs",
         class_weight="balanced",
         random_state=42,
-        n_jobs=-1,
+        n_jobs=1,
     )
     model.fit(X_train, y_train)
     return model
@@ -132,9 +114,16 @@ def train_distilbert(train_df: pd.DataFrame, test_df: pd.DataFrame, epochs: int 
         get_linear_schedule_with_warmup,
     )
 
-    device = torch.device("mps" if torch.backends.mps.is_available() else
-                          "cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    use_device = os.environ.get("SAFETYPE_DEVICE", "auto")
+    if use_device == "auto":
+        device = torch.device(
+            "cuda" if torch.cuda.is_available()
+            else "mps" if torch.backends.mps.is_available()
+            else "cpu"
+        )
+    else:
+        device = torch.device(use_device)
+    print(f"Using device: {device}", flush=True)
 
     tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
 
@@ -165,11 +154,11 @@ def train_distilbert(train_df: pd.DataFrame, test_df: pd.DataFrame, epochs: int 
     train_dataset = ToxicityDataset(train_df["text_clean"], train_df["label_encoded"], tokenizer)
     test_dataset = ToxicityDataset(test_df["text_clean"], test_df["label_encoded"], tokenizer)
 
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
     model = DistilBertForSequenceClassification.from_pretrained(
-        "distilbert-base-uncased", num_labels=3
+        "distilbert-base-uncased", num_labels=len(LABEL_NAMES)
     ).to(device)
 
     optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01)
@@ -198,10 +187,10 @@ def train_distilbert(train_df: pd.DataFrame, test_df: pd.DataFrame, epochs: int 
             optimizer.zero_grad()
 
             if batch_idx % 100 == 0:
-                print(f"  Epoch {epoch+1}, Batch {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}")
+                print(f"  Epoch {epoch+1}, Batch {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}", flush=True)
 
         avg_loss = total_loss / len(train_loader)
-        print(f"Epoch {epoch+1}/{epochs}, Avg Loss: {avg_loss:.4f}")
+        print(f"Epoch {epoch+1}/{epochs}, Avg Loss: {avg_loss:.4f}", flush=True)
 
         model.eval()
         all_preds, all_labels = [], []
@@ -233,7 +222,7 @@ def train_distilbert(train_df: pd.DataFrame, test_df: pd.DataFrame, epochs: int 
 def plot_confusion_matrix(y_true, y_pred, model_name: str):
     """Generate and save a confusion matrix plot."""
     cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(14, 11))
     sns.heatmap(
         cm, annot=True, fmt="d", cmap="Blues",
         xticklabels=LABEL_NAMES, yticklabels=LABEL_NAMES,
@@ -241,6 +230,8 @@ def plot_confusion_matrix(y_true, y_pred, model_name: str):
     plt.title(f"Confusion Matrix - {model_name}")
     plt.ylabel("True Label")
     plt.xlabel("Predicted Label")
+    plt.xticks(rotation=45, ha="right")
+    plt.yticks(rotation=0)
     plt.tight_layout()
     plt.savefig(OUTPUTS_DIR / f"confusion_matrix_{model_name.lower().replace(' ', '_')}.png", dpi=150)
     plt.close()
@@ -338,6 +329,8 @@ def main():
     joblib.dump(lr_model, MODELS_DIR / "logistic_regression.pkl")
 
     # --- Model 3: Deep Learning (DistilBERT) ---
+    import gc
+    gc.collect()
     print("\n" + "="*60)
     print("Training Model 3: DistilBERT")
     print("="*60)

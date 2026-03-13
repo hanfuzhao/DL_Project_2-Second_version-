@@ -22,10 +22,18 @@ from pathlib import Path
 
 import numpy as np
 import joblib
+from scripts.model import NaiveBaseline  # noqa: F401 — needed for unpickling
 
 MODELS_DIR = Path(__file__).resolve().parent / "models"
-LABEL_NAMES = ["clean", "offensive", "hate_speech"]
-SEVERITY_ICONS = {"clean": "✅", "offensive": "⚠️", "hate_speech": "🚫"}
+LABEL_NAMES = [
+    "clean", "racism", "sexism", "profanity", "cyberbullying",
+    "toxicity", "hate_speech", "implicit_hate", "threat", "sarcasm",
+]
+SEVERITY_ICONS = {
+    "clean": "✅", "racism": "🚫", "sexism": "🚫", "profanity": "⚠️",
+    "cyberbullying": "🚫", "toxicity": "⚠️", "hate_speech": "🚫",
+    "implicit_hate": "⚠️", "threat": "🚫", "sarcasm": "💬",
+}
 
 
 def clean_text(text: str) -> str:
@@ -113,21 +121,19 @@ class SafeTypePredictor:
 
     @staticmethod
     def _empty_result() -> dict:
-        return {
-            "label": "clean",
-            "confidence": 1.0,
-            "probabilities": {"clean": 1.0, "offensive": 0.0, "hate_speech": 0.0},
-        }
+        probs = {name: 0.0 for name in LABEL_NAMES}
+        probs["clean"] = 1.0
+        return {"label": "clean", "confidence": 1.0, "probabilities": probs}
 
 
 def print_result(text: str, result: dict):
     """Pretty-print a single prediction."""
-    icon = SEVERITY_ICONS[result["label"]]
+    icon = SEVERITY_ICONS.get(result["label"], "❓")
     print(f"\n  Input : {text}")
     print(f"  Result: {icon}  {result['label']}  (confidence {result['confidence']:.1%})")
-    print(f"  Probs : clean={result['probabilities']['clean']:.3f}  "
-          f"offensive={result['probabilities']['offensive']:.3f}  "
-          f"hate_speech={result['probabilities']['hate_speech']:.3f}")
+    top3 = sorted(result["probabilities"].items(), key=lambda x: x[1], reverse=True)[:3]
+    probs_str = "  ".join(f"{k}={v:.3f}" for k, v in top3)
+    print(f"  Top 3 : {probs_str}")
 
 
 def interactive_mode(predictor: SafeTypePredictor):
