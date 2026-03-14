@@ -62,7 +62,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const msgEndRef = useRef(null);
   const nextId = useRef(4);
-  const didInit = useRef(false);
 
   const layout = kbMode === 'abc' ? KB_LETTERS
                : kbMode === 'num' ? KB_NUMBERS
@@ -75,12 +74,10 @@ export default function App() {
     msgEndRef.current?.scrollIntoView({ behavior:'smooth' });
   }, [messages]);
 
-  // Analyze all initial messages on mount
+  // Analyze all messages on mount and when model changes
   useEffect(() => {
-    if (didInit.current) return;
-    didInit.current = true;
-    INIT_MSGS.forEach(m => analyzeMessage(m.id, m.text));
-  }, []);
+    messages.forEach(m => analyzeMessage(m.id, m.text));
+  }, [model]);
 
   // Live typing detection
   useEffect(() => {
@@ -234,7 +231,7 @@ export default function App() {
         <div className="topbar-right">
           <div className="status-dot" />
           <span className="model-label">Model</span>
-          <select value={model} onChange={e => setModel(e.target.value)}>
+          <select value={model} onChange={e => { setModel(e.target.value); setAlerts([]); }}>
             <option value="distilbert">DistilBERT</option>
             <option value="logistic_regression">Logistic Regression</option>
             <option value="naive_baseline">Naive Baseline</option>
