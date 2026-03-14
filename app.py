@@ -6,14 +6,21 @@ Deploy:       gunicorn app:app
 
 import os
 import sys
+import logging
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from flask import Flask, request, jsonify, send_from_directory
+
+logger.info("Importing SafeTypePredictor ...")
 from main import SafeTypePredictor, LABEL_NAMES
+logger.info("Import complete.")
 
 DIST_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'dist')
 
@@ -111,8 +118,12 @@ def predict():
     if model_type not in ("naive_baseline", "logistic_regression", "distilbert"):
         return jsonify({"error": f"Unknown model: {model_type}"}), 400
 
-    predictor = get_predictor(model_type)
-    result = predictor.predict(text)
+    try:
+        predictor = get_predictor(model_type)
+        result = predictor.predict(text)
+    except Exception as e:
+        logger.error("Model error: %s", e, exc_info=True)
+        return jsonify({"error": f"Model loading failed: {str(e)}"}), 500
 
     result = calibrate(result)
 

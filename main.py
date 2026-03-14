@@ -22,7 +22,6 @@ from pathlib import Path
 
 import numpy as np
 import joblib
-from scripts.model import NaiveBaseline  # noqa: F401 — needed for unpickling
 
 MODELS_DIR = Path(__file__).resolve().parent / "models"
 LABEL_NAMES = [
@@ -58,6 +57,7 @@ class SafeTypePredictor:
 
     def _load(self, model_type: str):
         if model_type == "naive_baseline":
+            from scripts.model import NaiveBaseline  # noqa: F401 — needed for unpickling
             self.model = joblib.load(MODELS_DIR / "naive_baseline.pkl")
 
         elif model_type == "logistic_regression":
