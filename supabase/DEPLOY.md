@@ -3,7 +3,7 @@
 ## Prerequisites
 1. Install Supabase CLI: `brew install supabase/tap/supabase`
 2. Login: `supabase login`
-3. Link to your project: `supabase link --project-ref igqisvxkzkirtmkuyfrq`
+3. Link to your project: `supabase link --project-ref vdgjozaouhjhjzrwuqvi`
 
 ## Deploy the Edge Function
 ```bash
