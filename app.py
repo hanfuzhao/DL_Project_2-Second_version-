@@ -57,7 +57,7 @@ def calibrate(result):
       Others  (profanity, …)       → flag if conf >= 50 %
 
     Additionally, if clean probability > 30 %, always default to clean.
-    Raw probabilities are preserved for the dashboard."""
+    When overriding to clean, probabilities are adjusted for consistency."""
     label = result["label"]
     conf  = result["confidence"]
     probs = result["probabilities"]
@@ -66,32 +66,32 @@ def calibrate(result):
     if label == "clean":
         return result
 
+    override = False
+
     if label in INFO_LABELS:
-        result["original_label"] = label
-        result["label"] = "clean"
-        result["confidence"] = clean_p
-        return result
-
-    if clean_p < 0.03:
-        return result
-
-    if clean_p > 0.30:
-        result["original_label"] = label
-        result["label"] = "clean"
-        result["confidence"] = clean_p
-        return result
-
-    if label in SEVERE_LABELS:
-        threshold = 0.25
-    elif label in INFO_LABELS:
-        threshold = 0.75
+        override = True
+    elif clean_p < 0.03:
+        pass
+    elif clean_p > 0.30:
+        override = True
     else:
-        threshold = 0.50
+        if label in SEVERE_LABELS:
+            threshold = 0.25
+        elif label in INFO_LABELS:
+            threshold = 0.75
+        else:
+            threshold = 0.50
+        if conf < threshold:
+            override = True
 
-    if conf < threshold:
+    if override:
         result["original_label"] = label
+        orig_p = probs[label]
+        if orig_p > clean_p:
+            probs[label] = clean_p
+            probs["clean"] = orig_p
         result["label"] = "clean"
-        result["confidence"] = clean_p
+        result["confidence"] = probs["clean"]
 
     return result
 
