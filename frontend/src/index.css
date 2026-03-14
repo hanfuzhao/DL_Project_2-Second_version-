@@ -277,6 +277,56 @@ body {
 .a-badge.warn   { background:#fffbeb; color:#d97706; }
 .a-badge.info   { background:#eef2ff; color:#4f46e5; }
 
+/* ── EDUCATIONAL SAFETY GUIDE ── */
+.edu-card { border-left:3px solid #e5e7eb; }
+.edu-card.edu-safe   { border-left-color:#16a34a; background:#fafff9; }
+.edu-card.edu-danger  { border-left-color:#dc2626; background:#fff9f9; }
+.edu-card.edu-warn    { border-left-color:#ea580c; background:#fffcf5; }
+.edu-card.edu-info    { border-left-color:#4f46e5; background:#f8f9ff; }
+
+.edu-header { display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; }
+.edu-badge {
+  color:#fff; font-size:.7rem; font-weight:700; padding:2px 8px;
+  border-radius:4px; text-transform:capitalize;
+}
+.edu-desc { color:var(--muted); font-size:.8rem; font-style:italic; }
+
+.edu-explain {
+  font-size:.85rem; color:var(--text); line-height:1.55;
+  margin-bottom:.75rem; padding-bottom:.75rem; border-bottom:1px solid var(--border);
+}
+
+.edu-section { display:flex; flex-direction:column; gap:.65rem; }
+.edu-block {}
+.edu-block-title {
+  font-size:.72rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.04em; margin-bottom:.2rem;
+}
+.edu-safe .edu-block-title   { color:#16a34a; }
+.edu-danger .edu-block-title { color:#dc2626; }
+.edu-warn .edu-block-title   { color:#ea580c; }
+.edu-info .edu-block-title   { color:#4f46e5; }
+.edu-block p { font-size:.82rem; color:#374151; line-height:1.5; margin:0; }
+
+/* ── CATEGORY REFERENCE ── */
+.cat-ref { display:flex; flex-direction:column; gap:.3rem; }
+.cat-ref-row {
+  display:flex; align-items:center; gap:.4rem;
+  padding:.3rem .4rem; border-radius:6px; font-size:.78rem;
+}
+.cat-ref-row:hover { background:#f9fafb; }
+.cat-ref-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.cat-ref-name { width:6rem; font-weight:600; color:var(--text); text-transform:capitalize; flex-shrink:0; }
+.cat-ref-sev {
+  font-size:.65rem; font-weight:700; padding:1px 5px; border-radius:3px;
+  text-transform:uppercase; flex-shrink:0; width:3.2rem; text-align:center;
+}
+.cat-ref-sev.safe   { background:#dcfce7; color:#166534; }
+.cat-ref-sev.danger { background:#fee2e2; color:#991b1b; }
+.cat-ref-sev.warn   { background:#fef9c3; color:#854d0e; }
+.cat-ref-sev.info   { background:#e0e7ff; color:#3730a3; }
+.cat-ref-desc { color:var(--muted); flex:1; }
+
 .steps { display:flex; flex-direction:column; gap:.5rem; }
 .step { display:flex; gap:.5rem; align-items:flex-start; }
 .step-num {

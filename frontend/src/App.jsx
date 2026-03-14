@@ -8,16 +8,66 @@ const LABEL_NAMES = [
 ];
 
 const CAT = {
-  clean:         { color:'#16a34a', sev:'safe',   desc:'Safe content' },
-  racism:        { color:'#dc2626', sev:'danger', desc:'Racial discrimination' },
-  sexism:        { color:'#e11d48', sev:'danger', desc:'Gender-based hate' },
-  profanity:     { color:'#ea580c', sev:'warn',   desc:'Obscene language' },
-  cyberbullying: { color:'#9333ea', sev:'danger', desc:'Personal attacks' },
-  toxicity:      { color:'#7c3aed', sev:'warn',   desc:'Toxic language' },
-  hate_speech:   { color:'#b91c1c', sev:'danger', desc:'Hate speech' },
-  implicit_hate: { color:'#c2410c', sev:'warn',   desc:'Indirect / coded hate' },
-  threat:        { color:'#991b1b', sev:'danger', desc:'Threats or violence' },
-  sarcasm:       { color:'#4f46e5', sev:'info',   desc:'Sarcasm / irony' },
+  clean: {
+    color:'#16a34a', sev:'safe', desc:'Safe content',
+    explain:'This message contains no harmful content and reflects healthy communication.',
+    forParent:'No action needed. Encourage your child to continue communicating respectfully.',
+    forChild:'Great job! Respectful conversations build strong friendships.',
+  },
+  racism: {
+    color:'#dc2626', sev:'danger', desc:'Racial discrimination',
+    explain:'Language that targets or demeans someone based on their race, ethnicity, or national origin.',
+    forParent:'Have an open conversation about why racial stereotypes and slurs cause real harm. Help your child understand that everyone deserves equal respect regardless of background.',
+    forChild:'Words that target someone\'s race can cause deep pain. Everyone is equal — treat others the way you want to be treated.',
+  },
+  sexism: {
+    color:'#e11d48', sev:'danger', desc:'Gender-based hate',
+    explain:'Messages containing gender-based discrimination, stereotypes, or harassment.',
+    forParent:'Discuss gender equality with your child. Explain that putting someone down because of their gender is never acceptable.',
+    forChild:'Everyone deserves respect no matter their gender. Putting someone down because of who they are is never okay.',
+  },
+  profanity: {
+    color:'#ea580c', sev:'warn', desc:'Obscene language',
+    explain:'Use of vulgar, obscene, or inappropriate language in conversation.',
+    forParent:'Talk about appropriate vs. inappropriate language. Explain that profanity can hurt others and reflects poorly on the speaker.',
+    forChild:'Using bad words can hurt people\'s feelings and make them uncomfortable. Try expressing yourself with kinder words.',
+  },
+  cyberbullying: {
+    color:'#9333ea', sev:'danger', desc:'Personal attacks',
+    explain:'Targeted personal attacks, harassment, or intimidation directed at an individual.',
+    forParent:'Take this seriously. Ask your child if they are being bullied or bullying others. Save evidence, report to the platform, and contact the school if needed.',
+    forChild:'If someone is being mean to you online, don\'t respond — tell a parent or trusted adult right away. You are not alone.',
+  },
+  toxicity: {
+    color:'#7c3aed', sev:'warn', desc:'Toxic language',
+    explain:'Generally negative, hostile, or harmful language that creates an unhealthy communication environment.',
+    forParent:'Monitor the conversation pattern. Occasional negativity is normal, but persistent toxicity may indicate deeper issues. Encourage positive expression.',
+    forChild:'Negative words can spread like a virus. Try to be the person who lifts others up, not brings them down.',
+  },
+  hate_speech: {
+    color:'#b91c1c', sev:'danger', desc:'Hate speech',
+    explain:'Targeted hatred against a group based on race, religion, gender, sexual orientation, or disability.',
+    forParent:'This is a serious concern. Discuss the impact of hate speech with your child. Consider reporting to the platform and, if at school, to administrators.',
+    forChild:'Hating someone for who they are is wrong. If you see hate speech, tell an adult — standing up against hate makes the world safer.',
+  },
+  implicit_hate: {
+    color:'#c2410c', sev:'warn', desc:'Indirect / coded hate',
+    explain:'Uses coded language, dog whistles, or indirect expressions to discriminate against a group.',
+    forParent:'This is harder to detect. Learn common coded phrases and discuss with your child how some "jokes" can carry hidden harmful meanings.',
+    forChild:'Some words seem harmless but actually hurt people in hidden ways. If something feels wrong, it probably is — ask an adult.',
+  },
+  threat: {
+    color:'#991b1b', sev:'danger', desc:'Threats or violence',
+    explain:'Messages containing direct or implied threats of physical harm or violence.',
+    forParent:'Take all threats seriously, even if they seem like "jokes." Save the message, report it to the platform, and contact school officials or law enforcement if you feel the threat is credible.',
+    forChild:'If someone threatens you — even as a joke — tell a parent or teacher immediately. Your safety always comes first.',
+  },
+  sarcasm: {
+    color:'#4f46e5', sev:'info', desc:'Sarcasm / irony',
+    explain:'Detected sarcastic or ironic tone. While sarcasm itself is not harmful, it can sometimes mask hostility.',
+    forParent:'Sarcasm is a normal part of communication, but excessive sarcasm directed at someone can be a form of subtle bullying. Context matters.',
+    forChild:'Sarcasm can be funny, but it can also hurt. Make sure the other person is laughing with you, not being hurt by your words.',
+  },
 };
 
 const KB_LETTERS = [
@@ -74,9 +124,32 @@ export default function App() {
     msgEndRef.current?.scrollIntoView({ behavior:'smooth' });
   }, [messages]);
 
-  // Analyze all messages on mount and when model changes
   useEffect(() => {
-    messages.forEach(m => analyzeMessage(m.id, m.text));
+    setAlerts([]);
+    setLiveDetection(null);
+    setMessages(prev => {
+      const cleared = prev.map(m => ({ ...m, analysis: null }));
+      cleared.forEach(m => {
+        fetch(API, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ text: m.text, model }),
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.error) return;
+          setMessages(p => p.map(msg => msg.id === m.id ? { ...msg, analysis: d } : msg));
+          if (d.label !== 'clean') {
+            setAlerts(p => {
+              if (p.some(a => a.msgId === m.id)) return p;
+              return [{ msgId:m.id, text:m.text, label:d.label, sev:CAT[d.label]?.sev, ts:Date.now() }, ...p];
+            });
+          }
+        })
+        .catch(() => {});
+      });
+      return cleared;
+    });
   }, [model]);
 
   // Live typing detection
@@ -231,7 +304,7 @@ export default function App() {
         <div className="topbar-right">
           <div className="status-dot" />
           <span className="model-label">Model</span>
-          <select value={model} onChange={e => { setModel(e.target.value); setAlerts([]); }}>
+          <select value={model} onChange={e => setModel(e.target.value)}>
             <option value="distilbert">DistilBERT</option>
             <option value="logistic_regression">Logistic Regression</option>
             <option value="naive_baseline">Naive Baseline</option>
@@ -375,18 +448,55 @@ export default function App() {
             </div>
           </div>
 
+          {dashAnalysis && (
+            <div className={`card edu-card edu-${CAT[dashAnalysis.label]?.sev || 'safe'}`}>
+              <h3>Safety Guide</h3>
+              <div className="edu-header">
+                <span className="edu-badge" style={{background: CAT[dashAnalysis.label]?.color}}>
+                  {dashAnalysis.label.replace(/_/g,' ')}
+                </span>
+                <span className="edu-desc">{CAT[dashAnalysis.label]?.desc}</span>
+              </div>
+              <div className="edu-explain">{CAT[dashAnalysis.label]?.explain}</div>
+              <div className="edu-section">
+                <div className="edu-block">
+                  <div className="edu-block-title">For Parents</div>
+                  <p>{CAT[dashAnalysis.label]?.forParent}</p>
+                </div>
+                <div className="edu-block">
+                  <div className="edu-block-title">For Children</div>
+                  <p>{CAT[dashAnalysis.label]?.forChild}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="card">
             <h3>How It Works</h3>
             <div className="steps">
               {[
-                ['Keyboard Layer','Runs as a custom iOS keyboard, active in any app.'],
-                ['Real-Time NLP','Messages analyzed by DistilBERT with sub-second latency.'],
-                ['10 Categories','Detects racism, threats, bullying, profanity, and more.'],
-                ['Parent Alerts','Harmful content triggers instant parent notifications.'],
+                ['Keyboard Layer','SafeType runs as a custom iOS keyboard extension, monitoring text input across all messaging apps.'],
+                ['Real-Time NLP','Every message is analyzed by fine-tuned DistilBERT or Logistic Regression models with sub-second latency.'],
+                ['10 Safety Categories','Detects racism, threats, cyberbullying, profanity, sexism, hate speech, toxicity, implicit hate, sarcasm, and clean content.'],
+                ['Parent Dashboard','Parents receive real-time alerts when harmful content is detected, with educational guidance on how to respond.'],
               ].map(([title,desc], i) => (
                 <div key={i} className="step">
                   <div className="step-num">{i+1}</div>
                   <div><strong>{title}</strong><br/><span className="step-desc">{desc}</span></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Category Reference</h3>
+            <div className="cat-ref">
+              {LABEL_NAMES.map(n => (
+                <div key={n} className="cat-ref-row">
+                  <span className="cat-ref-dot" style={{background: CAT[n].color}} />
+                  <span className="cat-ref-name">{n.replace(/_/g,' ')}</span>
+                  <span className={`cat-ref-sev ${CAT[n].sev}`}>{CAT[n].sev}</span>
+                  <span className="cat-ref-desc">{CAT[n].desc}</span>
                 </div>
               ))}
             </div>

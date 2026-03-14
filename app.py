@@ -26,6 +26,14 @@ DIST_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'dist')
 
 app = Flask(__name__, static_folder=DIST_DIR, static_url_path='')
 
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return response
+
 MODELS = {}
 
 CATEGORY_META = {
