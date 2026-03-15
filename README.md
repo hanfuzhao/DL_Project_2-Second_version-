@@ -5,21 +5,45 @@ An NLP system that detects **10 categories** of harmful or sensitive content in 
 ## Project Structure
 
 ```
-├── README.md               <- This file
-├── requirements.txt        <- Python dependencies
-├── setup.py                <- Runs full pipeline (data → features → models → experiments)
+├── README.md               <- Description of project and how to set up and run it
+├── requirements.txt        <- Requirements file to document dependencies
+├── setup.py                <- Script to set up project (get data, build features, train model)
 ├── main.py                 <- Main entry point for inference (interactive / single / batch)
+├── render.yaml             <- Render deployment configuration
 ├── scripts/
 │   ├── make_dataset.py     <- Loads and combines raw datasets into unified 10-class format
 │   ├── build_features.py   <- Text cleaning, TF-IDF extraction, handcrafted features
 │   ├── model.py            <- Trains and evaluates all three models
 │   └── experiment.py       <- Training size sensitivity + noise robustness experiments
-├── models/                 <- Trained model artifacts (see "Models" section below)
+├── models/                 <- Trained model artifacts
+│   ├── naive_baseline.pkl
+│   ├── logistic_regression.pkl
+│   ├── tfidf_vectorizer.pkl
+│   └── distilbert-toxicity/ <- Fine-tuned DistilBERT model directory
 ├── data/
 │   ├── raw/                <- Raw datasets (not tracked in git)
-│   ├── processed/          <- Cleaned and feature-engineered data (LFS for large CSV)
+│   ├── processed/          <- Cleaned and feature-engineered data
 │   └── outputs/            <- Evaluation results, plots, confusion matrices
-├── notebooks/              <- EDA and exploration (eda.ipynb — 10-class analysis)
+├── notebooks/
+│   └── eda.ipynb           <- EDA and exploration (10-class analysis)
+├── web_app/                <- All deployed application code
+│   ├── app.py              <- Flask API server with calibration and CORS
+│   ├── frontend/           <- React app (iPhone keyboard safety simulator)
+│   │   ├── src/App.jsx     <- Main component: chat UI + keyboard + dashboard
+│   │   ├── src/index.css   <- Global styles
+│   │   └── dist/           <- Vite build output
+│   ├── web/                <- Parent monitoring dashboard (HTML/CSS/JS)
+│   │   ├── index.html      <- Dashboard with real-time message analysis
+│   │   ├── css/style.css   <- UI styling
+│   │   ├── js/config.js    <- Supabase connection configuration
+│   │   ├── js/auth.js      <- Authentication logic
+│   │   ├── js/dashboard.js <- Message rendering + direct API analysis
+│   │   ├── js/app.js       <- Routing and interaction wiring
+│   │   └── Dockerfile      <- Docker/nginx deployment config
+│   └── supabase/
+│       └── functions/
+│           └── analyze-messages/
+│               └── index.ts <- Edge Function: calls SafeType API for batch analysis
 └── .gitignore
 ```
 
@@ -60,6 +84,34 @@ python main.py --batch messages.txt
 ```
 
 Output: predicted **label** (one of 10 categories) and **confidence** plus top-3 class probabilities.
+
+### 4. Run the web API locally
+
+```bash
+python app.py
+```
+
+The Flask server starts at `http://localhost:8080` with:
+- `POST /api/predict` — accepts `{ "text": "...", "model": "distilbert" }` and returns classification results
+- Built-in post-processing calibration to reduce false positives
+- CORS enabled for cross-origin access
+
+## Deployment
+
+The project is deployed across three platforms:
+
+- **Render** — Flask API + DistilBERT model (`https://dl-project-2-second-version.onrender.com`)
+- **Railway** — Parent monitoring dashboard (`web/` directory)
+- **Supabase** — Database (messages table) + Edge Function (batch analysis)
+
+### Deploying the Edge Function
+
+```bash
+brew install supabase/tap/supabase
+supabase login
+supabase link --project-ref vdgjozaouhjhjzrwuqvi
+supabase functions deploy analyze-messages
+```
 
 ## Models
 
